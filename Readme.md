@@ -25,7 +25,7 @@ The code is divided into 2 files -
 
 ## Requirements
 
-* .env file with following AWS settings -
+* Create .env file with following AWS settings -
 
 ```
 ACCESS_KEY = 'xxxxxx'
