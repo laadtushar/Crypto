@@ -1,8 +1,12 @@
 import os
+import sys
 from dotenv import load_dotenv
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
+import logging
+from logging import handlers
+import datetime as dt
 import json
 import matplotlib.pyplot as plt
 import boto3
@@ -15,6 +19,43 @@ load_dotenv()
 ACCESS_KEY = os.environ.get("ACCESS_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
+def create_rotating_log(nameoflog):
+    try:
+        """
+        function: Creates a rotating log file and loffer object for error logging
+        output = logger object
+        """
+        logger = logging.getLogger(nameoflog)
+        logger.setLevel(logging.INFO)
+
+        ## Here we define our formatter
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        filename = nameoflog+'.log'
+        logHandler = handlers.RotatingFileHandler(filename, maxBytes=10000000, backupCount=4)
+        logHandler.setLevel(logging.INFO)
+        ## Here we set our logHandler's formatter
+        logHandler.setFormatter(formatter)
+
+        logger.addHandler(logHandler)
+    except Exception as e:
+            logger = logging.getLogger(nameoflog)
+            logger.setLevel(logging.INFO)
+            log_error(e)
+
+    return logger
+
+logger = create_rotating_log('Crypto')  
+
+def log_error(e):
+    '''
+    function: logs error to log file with traceback and datetime
+    '''
+    exception_message = str(e)
+    exception_type, exception_object, exception_traceback = sys.exc_info()
+    filename = os.path.split(exception_traceback.tb_frame.f_code.co_filename)[1]
+    logger.error(f"{exception_message} {exception_type} {filename}, Line {exception_traceback.tb_lineno} "+ str(dt.datetime.now()))
+
+
 
 def get_soup(url,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0'}):
     '''
@@ -26,7 +67,7 @@ def get_soup(url,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:91.0) 
         response = requests.get(url,headers=headers)
         soup = BeautifulSoup(response.text,'lxml')
     except Exception as e:
-        print(e)
+        log_error(e)
         soup = None
     return soup
 
@@ -52,7 +93,7 @@ def get_crypto_history_urls(url='https://finance.yahoo.com/crypto/?offset=0&coun
         with open("./Currency/currencies.json", "w") as outfile:
             json.dump(anchors, outfile)  
     except Exception as e:
-        print(e)
+        log_error(e)
 
     return anchors
 
@@ -85,7 +126,7 @@ def get_historical_data(currency):
         df.sort_values(by='Date',ascending=False, inplace=True)
         return df
     except Exception as e:
-        print(e)
+        log_error(e)
         return None
     
 def get_average(currency,column,days=30):
@@ -100,7 +141,7 @@ def get_average(currency,column,days=30):
         mean = df[column].mean()
         return mean
     except Exception as e:
-        print(e)
+        log_error(e)
         return None
 
 def get_correlation(Currencies,column,days=30):
@@ -162,7 +203,7 @@ def get_plot_two(currrency,xlabel='Date',ylabel='Value($)',column='Adj Close'):
         df_concat.plot(x = 'Date', y = new_columns[1], ax = ax, secondary_y = True) 
         plt.show()
     except Exception as e:
-        print(e)
+        log_error(e)
 
 def upload_to_aws(local_file, bucket, s3_file):
     '''
