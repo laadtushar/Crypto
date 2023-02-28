@@ -21,7 +21,7 @@ Now use this dataset and do basic analysis on it and answer the following questi
 The code is divided into 2 files -
 
 1. utility.py - this contains all main functions
-2. runner.py - this runs the particular function as per use case
+2. runner.py - this runs the particular function from utility.py file as per use case
 
 ## Requirements
 
